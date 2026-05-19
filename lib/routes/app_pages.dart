@@ -82,6 +82,8 @@ import '../pages/register/verify_phone/verify_phone_binding.dart';
 import '../pages/register/verify_phone/verify_phone_view.dart';
 import '../pages/splash/splash_binding.dart';
 import '../pages/splash/splash_view.dart';
+import '../pages/ai_settings/ai_settings_binding.dart';
+import '../pages/ai_settings/ai_settings_view.dart';
 
 part 'app_routes.dart';
 
@@ -309,6 +311,11 @@ class AppPages {
       name: AppRoutes.resetPassword,
       page: () => ResetPasswordPage(),
       binding: ResetPasswordBinding(),
+    ),
+    _pageBuilder(
+      name: AppRoutes.aiSettings,
+      page: () => AiSettingsPage(),
+      binding: AiSettingsBinding(),
     ),
   ];
 }

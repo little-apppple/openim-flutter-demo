@@ -20,6 +20,13 @@ class DataSp {
   static const _chatBackground = '%s_chatBackground_%s';
   static const _loginType = 'loginType';
   static const _meetingInProgress = '%_meetingInProgress';
+  static const _aiEnabled = 'ai_enabled';
+  static const _aiLlmConfig = 'ai_llm_config';
+  static const _aiNotionConfig = 'ai_notion_config_non_sensitive';
+  static const _aiTopicEnabled = '%s_ai_topic_enabled';
+  static const _aiReplyEnabled = '%s_ai_reply_enabled';
+  static const _aiNotionSyncEnabled = '%s_ai_notion_sync_enabled';
+  static const _aiLastSyncTime = 'ai_last_sync_time';
 
   DataSp._();
 
@@ -181,5 +188,61 @@ class DataSp {
 
   static Future<bool>? removeMeetingInProgress() {
     return SpUtil().remove(getKey(_meetingInProgress));
+  }
+
+  static Future<bool>? putAIEnabled(bool enabled) {
+    return SpUtil().putBool(_aiEnabled, defaultValue: enabled);
+  }
+
+  static bool getAIEnabled() {
+    return SpUtil().getBool(_aiEnabled, defValue: false) ?? false;
+  }
+
+  static Future<bool>? putAILlmConfig(Map<String, dynamic> config) {
+    return SpUtil().putObject(_aiLlmConfig, config);
+  }
+
+  static Map? getAILlmConfig() {
+    return SpUtil().getObject(_aiLlmConfig);
+  }
+
+  static Future<bool>? putAINotionConfig(Map<String, dynamic> config) {
+    return SpUtil().putObject(_aiNotionConfig, config);
+  }
+
+  static Map? getAINotionConfig() {
+    return SpUtil().getObject(_aiNotionConfig);
+  }
+
+  static Future<bool>? putAITopicEnabled(bool enabled) {
+    return SpUtil().putBool(getKey(_aiTopicEnabled), defaultValue: enabled);
+  }
+
+  static bool getAITopicEnabled() {
+    return SpUtil().getBool(getKey(_aiTopicEnabled), defValue: true) ?? true;
+  }
+
+  static Future<bool>? putAIReplyEnabled(bool enabled) {
+    return SpUtil().putBool(getKey(_aiReplyEnabled), defaultValue: enabled);
+  }
+
+  static bool getAIReplyEnabled() {
+    return SpUtil().getBool(getKey(_aiReplyEnabled), defValue: true) ?? true;
+  }
+
+  static Future<bool>? putAINotionSyncEnabled(bool enabled) {
+    return SpUtil().putBool(getKey(_aiNotionSyncEnabled), defaultValue: enabled);
+  }
+
+  static bool getAINotionSyncEnabled() {
+    return SpUtil().getBool(getKey(_aiNotionSyncEnabled), defValue: true) ?? true;
+  }
+
+  static Future<bool>? putAILastSyncTime(String time) {
+    return SpUtil().putString(_aiLastSyncTime, time);
+  }
+
+  static String? getAILastSyncTime() {
+    return SpUtil().getString(_aiLastSyncTime);
   }
 }

@@ -36,6 +36,11 @@ class MinePage extends StatelessWidget {
               isTopRadius: true,
             ),
             _buildItemView(
+              icon: ImageRes.myInfo,
+              label: 'AI 助手',
+              onTap: logic.openAiSettings,
+            ),
+            _buildItemView(
               icon: ImageRes.accountSetup,
               label: StrRes.accountSetup,
               onTap: logic.accountSetup,

@@ -24,6 +24,8 @@ class MineLogic extends GetxController {
 
   void aboutUs() => AppNavigator.startAboutUs();
 
+  void openAiSettings() => AppNavigator.startAiSettings();
+
   void logout() async {
     var confirm = await Get.dialog(CustomDialog(title: StrRes.logoutHint));
     if (confirm == true) {

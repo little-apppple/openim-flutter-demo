@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
 
 import 'core/controller/im_controller.dart';
+import 'ai_assistant/controllers/ai_assistant_controller.dart';
 import 'routes/app_pages.dart';
 import 'widgets/app_view.dart';
 
@@ -107,5 +108,6 @@ class InitBinding extends Bindings {
     Get.put<IMController>(IMController());
     Get.put<PushController>(PushController());
     Get.put<CacheController>(CacheController());
+    Get.put<AIAssistantController>(AIAssistantController());
   }
 }
