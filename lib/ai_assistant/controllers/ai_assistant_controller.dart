@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
@@ -11,8 +12,18 @@ import '../services/notion_service.dart';
 import '../utils/secure_storage.dart';
 
 class AIAssistantController extends GetxController {
-  final _llmService = LLMService();
-  final _notionService = NotionService();
+  final LLMService _llmService;
+  final NotionService _notionService;
+
+  AIAssistantController({
+    LLMService? llmService,
+    NotionService? notionService,
+    bool skipLoadConfig = false,
+  })  : _llmService = llmService ?? LLMService(),
+        _notionService = notionService ?? NotionService(),
+        _skipLoadConfig = skipLoadConfig;
+
+  final bool _skipLoadConfig;
 
   final aiEnabled = false.obs;
   final llmConfig = const LlmConfig().obs;
@@ -38,7 +49,7 @@ class AIAssistantController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadConfig();
+    if (!_skipLoadConfig) _loadConfig();
     _startSyncTimer();
     _setupConfigListeners();
   }
@@ -371,5 +382,18 @@ class AIAssistantController extends GetxController {
 
   void clearNotionMemoryCache(String conversationID) {
     _notionMemoryCache.remove(conversationID);
+  }
+
+  @visibleForTesting
+  int get syncQueueLength => _syncQueue.length;
+
+  @visibleForTesting
+  void preloadNotionMemory(String conversationID, String content) {
+    _notionMemoryCache[conversationID] = content;
+  }
+
+  @visibleForTesting
+  String? getNotionMemory(String conversationID) {
+    return _notionMemoryCache[conversationID];
   }
 }

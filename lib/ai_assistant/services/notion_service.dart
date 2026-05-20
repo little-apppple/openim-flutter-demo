@@ -7,10 +7,14 @@ class NotionService {
   static const _baseUrl = 'https://api.notion.com/v1';
   static const _notionVersion = '2022-06-28';
 
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
-  ));
+  final Dio _dio;
+
+  NotionService({Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 15),
+            ));
 
   Future<bool> testConnection(NotionConfig config) async {
     try {

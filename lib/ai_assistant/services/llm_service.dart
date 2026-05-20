@@ -5,10 +5,14 @@ import '../models/llm_config.dart';
 import '../models/memory_context.dart';
 
 class LLMService {
-  final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 15),
-    receiveTimeout: const Duration(seconds: 15),
-  ));
+  final Dio _dio;
+
+  LLMService({Dio? dio})
+      : _dio = dio ??
+            Dio(BaseOptions(
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 15),
+            ));
 
   Future<List<String>> generateTopicSuggestions({
     required LlmConfig config,
