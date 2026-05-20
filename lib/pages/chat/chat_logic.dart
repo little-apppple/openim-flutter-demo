@@ -179,7 +179,7 @@ class ChatLogic extends SuperController {
             _isReceivedMessageWhenSyncing = true;
             _replyDebounce?.cancel();
             _replyDebounce = Timer(const Duration(seconds: 2), () {
-              aiLogic.generateReplySuggestions(conversationInfo.conversationID, message);
+              aiLogic.generateReplySuggestions(conversationInfo, message);
             });
             if (scrollController.offset != 0) {
               scrollingCacheMessageList.add(message);
@@ -341,7 +341,7 @@ class ChatLogic extends SuperController {
     };
 
     _topicDebounce = Timer(const Duration(milliseconds: 1500), () {
-      aiLogic.generateTopicSuggestions(conversationInfo.conversationID);
+      aiLogic.generateTopicSuggestions(conversationInfo);
     });
     super.onInit();
   }

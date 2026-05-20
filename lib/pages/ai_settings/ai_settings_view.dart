@@ -86,10 +86,10 @@ class AiSettingsPage extends StatelessWidget {
                         isExpanded: true,
                         underline: const SizedBox(),
                         items: logic.vendorList
-                            .asMap()
-                            .entries
-                            .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value.value.key)))
-                            .toList(),
+            .asMap()
+            .entries
+            .map((e) => DropdownMenuItem(value: e.key, child: Text(e.value.name)))
+            .toList(),
                         onChanged: (v) {
                           if (v != null) logic.onVendorChanged(v);
                         },
@@ -131,11 +131,20 @@ class AiSettingsPage extends StatelessWidget {
                   onTest: logic.testNotionConnection,
                   status: aiLogic.notionConnected,
                 ),
-                Obx(() => Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      child: '上次同步: ${aiLogic.lastSyncTime.value.isEmpty ? "未同步" : aiLogic.lastSyncTime.value}'
-                          .toText..style = Styles.ts_8E9AB0_12sp,
-                    )),
+                Obx(() {
+                  final syncTime = aiLogic.lastSyncTime.value;
+                  String displayText = '未同步';
+                  if (syncTime.isNotEmpty) {
+                    try {
+                      final date = DateTime.parse(syncTime);
+                      displayText = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+                    } catch (_) {}
+                  }
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.h),
+                    child: '上次同步: $displayText'.toText..style = Styles.ts_8E9AB0_12sp,
+                  );
+                }),
               ],
             ),
           ),

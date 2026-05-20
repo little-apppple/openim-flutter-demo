@@ -52,6 +52,13 @@ class LlmConfig {
       );
 }
 
+class VendorPreset {
+  final String name;
+  final LlmConfig config;
+
+  const VendorPreset({required this.name, required this.config});
+}
+
 class LlmVendorPreset {
   static const openai = LlmConfig(
     vendor: 'openai',
@@ -89,13 +96,13 @@ class LlmVendorPreset {
     modelName: '',
   );
 
-  static const List<MapEntry<String, LlmConfig>> all = [
-    MapEntry('OpenAI', openai),
-    MapEntry('Azure OpenAI', azure),
-    MapEntry('通义千问', qwen),
-    MapEntry('智谱 AI', zhipu),
-    MapEntry('DeepSeek', deepseek),
-    MapEntry('自定义', custom),
+  static const List<VendorPreset> all = [
+    VendorPreset(name: 'OpenAI', config: openai),
+    VendorPreset(name: 'Azure OpenAI', config: azure),
+    VendorPreset(name: '通义千问', config: qwen),
+    VendorPreset(name: '智谱 AI', config: zhipu),
+    VendorPreset(name: 'DeepSeek', config: deepseek),
+    VendorPreset(name: '自定义', config: custom),
   ];
 
   static LlmConfig getByName(String vendor) {

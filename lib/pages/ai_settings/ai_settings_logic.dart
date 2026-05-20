@@ -31,7 +31,7 @@ class AiSettingsLogic extends GetxController {
 
   void _loadCurrentConfig() {
     final config = aiLogic.llmConfig.value;
-    final vendorIndex = vendorList.indexWhere((e) => e.value.vendor == config.vendor);
+    final vendorIndex = vendorList.indexWhere((e) => e.config.vendor == config.vendor);
     selectedVendorIndex.value = vendorIndex >= 0 ? vendorIndex : 0;
 
     apiKeyCtrl.text = config.apiKey;
@@ -47,14 +47,14 @@ class AiSettingsLogic extends GetxController {
 
   void onVendorChanged(int index) {
     selectedVendorIndex.value = index;
-    final preset = vendorList[index].value;
+    final preset = vendorList[index].config;
     apiBaseUrlCtrl.text = preset.apiBaseUrl;
     modelNameCtrl.text = preset.modelName;
   }
 
   Future<void> saveLlmConfig() async {
     final config = LlmConfig(
-      vendor: vendorList[selectedVendorIndex.value].value.vendor,
+      vendor: vendorList[selectedVendorIndex.value].config.vendor,
       apiKey: apiKeyCtrl.text.trim(),
       apiBaseUrl: apiBaseUrlCtrl.text.trim(),
       modelName: modelNameCtrl.text.trim(),
@@ -75,15 +75,17 @@ class AiSettingsLogic extends GetxController {
   Future<void> testLlmConnection() async {
     isTestingLlm.value = true;
     await saveLlmConfig();
-    await aiLogic.testLlmConnection();
+    final success = await aiLogic.testLlmConnection();
     isTestingLlm.value = false;
+    IMViews.showToast(success ? 'LLM 连接成功' : 'LLM 连接失败，请检查配置');
   }
 
   Future<void> testNotionConnection() async {
     isTestingNotion.value = true;
     await saveNotionConfig();
-    await aiLogic.testNotionConnection();
+    final success = await aiLogic.testNotionConnection();
     isTestingNotion.value = false;
+    IMViews.showToast(success ? 'Notion 连接成功' : 'Notion 连接失败，请检查配置');
   }
 
   @override

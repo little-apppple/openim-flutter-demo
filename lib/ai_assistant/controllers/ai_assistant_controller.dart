@@ -29,19 +29,39 @@ class AIAssistantController extends GetxController {
 
   final _notionMemoryCache = <String, String>{};
   final _syncQueue = <Map<String, dynamic>>[];
+  final _enqueuedMsgIDs = <String>{};
+  final _inFlightConversationIDs = <String>{};
   Timer? _syncTimer;
-  String? _inFlightConversationID;
+
+  Worker? _syncEnabledWorker;
 
   @override
   void onInit() {
     super.onInit();
     _loadConfig();
     _startSyncTimer();
+    _setupConfigListeners();
+  }
+
+  void _setupConfigListeners() {
+    _syncEnabledWorker = ever(notionSyncEnabled, (enabled) {
+      if (enabled && _canSyncNotion) {
+        _startSyncTimer();
+      } else {
+        _stopSyncTimer();
+      }
+    });
+  }
+
+  void _stopSyncTimer() {
+    _syncTimer?.cancel();
+    _syncTimer = null;
   }
 
   @override
   void onClose() {
-    _syncTimer?.cancel();
+    _syncEnabledWorker?.dispose();
+    _stopSyncTimer();
     super.onClose();
   }
 
@@ -124,16 +144,17 @@ class AIAssistantController extends GetxController {
   bool get _canSyncNotion =>
       aiEnabled.value && notionSyncEnabled.value && notionConfig.value.isConfigured;
 
-  Future<void> generateTopicSuggestions(String conversationID) async {
+  Future<void> generateTopicSuggestions(ConversationInfo conversationInfo) async {
+    final conversationID = conversationInfo.conversationID;
     if (!_canGenerateSuggestions || !topicEnabled.value) return;
-    if (_inFlightConversationID == conversationID) return;
-    _inFlightConversationID = conversationID;
+    if (_inFlightConversationIDs.contains(conversationID)) return;
+    _inFlightConversationIDs.add(conversationID);
 
     isLoadingSuggestions.value = true;
     suggestions.clear();
 
     try {
-      final context = await _buildMemoryContext(conversationID);
+      final context = await _buildMemoryContext(conversationInfo);
       final results = await _llmService.generateTopicSuggestions(
         config: llmConfig.value,
         context: context,
@@ -145,20 +166,21 @@ class AIAssistantController extends GetxController {
       Logger.print('generateTopicSuggestions failed: $e');
     } finally {
       isLoadingSuggestions.value = false;
-      _inFlightConversationID = null;
+      _inFlightConversationIDs.remove(conversationID);
     }
   }
 
-  Future<void> generateReplySuggestions(String conversationID, Message newMessage) async {
+  Future<void> generateReplySuggestions(ConversationInfo conversationInfo, Message newMessage) async {
+    final conversationID = conversationInfo.conversationID;
     if (!_canGenerateSuggestions || !replyEnabled.value) return;
-    if (_inFlightConversationID == conversationID) return;
-    _inFlightConversationID = conversationID;
+    if (_inFlightConversationIDs.contains(conversationID)) return;
+    _inFlightConversationIDs.add(conversationID);
 
     isLoadingSuggestions.value = true;
     suggestions.clear();
 
     try {
-      final context = await _buildMemoryContext(conversationID);
+      final context = await _buildMemoryContext(conversationInfo);
       final latestText = newMessage.textElem?.content ?? '';
       final results = await _llmService.generateReplySuggestions(
         config: llmConfig.value,
@@ -172,7 +194,7 @@ class AIAssistantController extends GetxController {
       Logger.print('generateReplySuggestions failed: $e');
     } finally {
       isLoadingSuggestions.value = false;
-      _inFlightConversationID = null;
+      _inFlightConversationIDs.remove(conversationID);
     }
   }
 
@@ -181,7 +203,8 @@ class AIAssistantController extends GetxController {
     isLoadingSuggestions.value = false;
   }
 
-  Future<MemoryContext> _buildMemoryContext(String conversationID) async {
+  Future<MemoryContext> _buildMemoryContext(ConversationInfo conversationInfo) async {
+    final conversationID = conversationInfo.conversationID;
     String recentMessages = '';
     String contactProfile = '';
     String notionMemory = '';
@@ -206,27 +229,20 @@ class AIAssistantController extends GetxController {
     }
 
     try {
-      final convList = await OpenIM.iMManager.conversationManager.getConversationListSplit(
-        offset: 0,
-        count: 100,
-      );
-      final conv = convList.firstWhereOrNull((c) => c.conversationID == conversationID);
-      if (conv != null) {
-        final buffer = StringBuffer();
-        buffer.writeln('会话名称: ${conv.showName ?? ''}');
-        if (conv.userID != null && conv.userID!.isNotEmpty) {
-          try {
-            final friends = await OpenIM.iMManager.friendshipManager.getFriendsInfo(
-              userIDList: [conv.userID!],
-            );
-            final friend = friends.firstOrNull;
-            if (friend != null) {
-              buffer.writeln('好友备注: ${friend.remark ?? ''}');
-            }
-          } catch (_) {}
-        }
-        contactProfile = buffer.toString();
+      final buffer = StringBuffer();
+      buffer.writeln('会话名称: ${conversationInfo.showName ?? ''}');
+      if (conversationInfo.userID != null && conversationInfo.userID!.isNotEmpty) {
+        try {
+          final friends = await OpenIM.iMManager.friendshipManager.getFriendsInfo(
+            userIDList: [conversationInfo.userID!],
+          );
+          final friend = friends.firstOrNull;
+          if (friend != null) {
+            buffer.writeln('好友备注: ${friend.remark ?? ''}');
+          }
+        } catch (_) {}
       }
+      contactProfile = buffer.toString();
     } catch (e) {
       Logger.print('Failed to fetch contact profile: $e');
     }
@@ -273,6 +289,8 @@ class AIAssistantController extends GetxController {
     required int sendTime,
   }) {
     if (!_canSyncNotion) return;
+    if (_enqueuedMsgIDs.contains(clientMsgID)) return;
+    _enqueuedMsgIDs.add(clientMsgID);
     _syncQueue.add({
       'conversationID': conversationID,
       'clientMsgID': clientMsgID,
@@ -286,6 +304,8 @@ class AIAssistantController extends GetxController {
   }
 
   void _startSyncTimer() {
+    _stopSyncTimer();
+    if (!_canSyncNotion) return;
     _syncTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (_syncQueue.isNotEmpty) {
         _flushSyncQueue();
@@ -298,12 +318,15 @@ class AIAssistantController extends GetxController {
 
     final batch = List<Map<String, dynamic>>.from(_syncQueue);
     _syncQueue.clear();
+    final batchedMsgIDs = batch.map((item) => item['clientMsgID'] as String).toSet();
 
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final item in batch) {
       final convID = item['conversationID'] as String;
       grouped.putIfAbsent(convID, () => []).add(item);
     }
+
+    final failedMessages = <Map<String, dynamic>>[];
 
     for (final entry in grouped.entries) {
       try {
@@ -335,7 +358,14 @@ class AIAssistantController extends GetxController {
         DataSp.putAILastSyncTime(lastSyncTime.value);
       } catch (e) {
         Logger.print('Notion sync flush failed for ${entry.key}: $e');
+        failedMessages.addAll(entry.value);
       }
+    }
+
+    if (failedMessages.isNotEmpty) {
+      _syncQueue.insertAll(0, failedMessages);
+    } else {
+      _enqueuedMsgIDs.removeAll(batchedMsgIDs);
     }
   }
 

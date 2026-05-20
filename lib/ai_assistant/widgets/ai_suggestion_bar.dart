@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:openim_common/openim_common.dart';
+import 'package:shimmer/shimmer.dart';
 import '../controllers/ai_assistant_controller.dart';
 import '../models/ai_suggestion.dart';
 
@@ -53,9 +54,12 @@ class AiSuggestionBar extends StatelessWidget {
     final icon = suggestion.type == AiSuggestionType.topic ? '💡' : '💬';
     return GestureDetector(
       onTap: () {
-        final aiLogic = Get.find<AIAssistantController>();
+        final aiLogic = Get.find<AiAssistantController>();
         if (inputController != null) {
           inputController!.text = suggestion.text;
+          inputController!.selection = TextSelection.fromPosition(
+            TextPosition(offset: suggestion.text.length),
+          );
         }
         aiLogic.clearSuggestions();
       },
@@ -88,16 +92,20 @@ class AiSuggestionBar extends StatelessWidget {
   }
 
   Widget _buildShimmer() {
-    return Row(
-      children: List.generate(
-        3,
-        (_) => Container(
-          margin: EdgeInsets.only(right: 8.w),
-          width: 120.w,
-          height: 32.h,
-          decoration: BoxDecoration(
-            color: Styles.c_FFFFFF,
-            borderRadius: BorderRadius.circular(16.r),
+    return Shimmer.fromColors(
+      baseColor: Styles.c_FFFFFF,
+      highlightColor: Styles.c_F0F2F6,
+      child: Row(
+        children: List.generate(
+          3,
+          (_) => Container(
+            margin: EdgeInsets.only(right: 8.w),
+            width: 120.w,
+            height: 32.h,
+            decoration: BoxDecoration(
+              color: Styles.c_FFFFFF,
+              borderRadius: BorderRadius.circular(16.r),
+            ),
           ),
         ),
       ),

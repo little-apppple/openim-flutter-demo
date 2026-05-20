@@ -178,17 +178,32 @@ class NotionService {
         'Content-Type': 'application/json',
       };
 
-  Future<T> withRetry<T>(Future<T> Function() fn, {int maxRetries = 3}) async {
-    final delays = [5, 15, 30];
+  Future<T> withRetry<T>(Future<T> Function() fn, {int maxRetries = 5}) async {
+    const baseDelays = [1, 2, 5, 10, 30];
     for (var i = 0; i <= maxRetries; i++) {
       try {
         return await fn();
+      } on DioException catch (e) {
+        if (e.response?.statusCode == 429) {
+          if (i >= maxRetries) rethrow;
+          final retryAfter = int.tryParse(e.response?.headers.value('retry-after') ?? '');
+          final delay = retryAfter != null 
+              ? Duration(seconds: retryAfter)
+              : Duration(seconds: baseDelays[i < baseDelays.length ? i : baseDelays.length - 1]);
+          Logger.print('Notion rate limited, retrying ${i + 1}/$maxRetries after ${delay.inSeconds}s');
+          await Future.delayed(delay);
+        } else if (i >= maxRetries) {
+          rethrow;
+        } else {
+          Logger.print('Notion retry ${i + 1}/$maxRetries after ${baseDelays[i]}s');
+          await Future.delayed(Duration(seconds: baseDelays[i < baseDelays.length ? i : baseDelays.length - 1]));
+        }
       } catch (e) {
         if (i >= maxRetries) rethrow;
-        Logger.print('Notion retry ${i + 1}/$maxRetries after ${delays[i]}s');
-        await Future.delayed(Duration(seconds: delays[i]));
+        Logger.print('Notion retry ${i + 1}/$maxRetries after ${baseDelays[i < baseDelays.length ? i : baseDelays.length - 1]}s');
+        await Future.delayed(Duration(seconds: baseDelays[i < baseDelays.length ? i : baseDelays.length - 1]));
       }
     }
-    throw Exception('Not reached');
+    throw Exception('Max retries exceeded');
   }
 }
