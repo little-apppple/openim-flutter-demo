@@ -358,7 +358,6 @@ class AIAssistantController extends GetxController {
 
     final batch = List<Map<String, dynamic>>.from(_syncQueue);
     _syncQueue.clear();
-    final batchedMsgIDs = batch.map((item) => item['clientMsgID'] as String).toSet();
 
     final grouped = <String, List<Map<String, dynamic>>>{};
     for (final item in batch) {
