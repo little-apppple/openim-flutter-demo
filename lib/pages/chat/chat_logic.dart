@@ -91,7 +91,7 @@ class ChatLogic extends SuperController {
   String? groupOwnerID;
 
   final _pageSize = 40;
-  final aiLogic = Get.find<AIAssistantController>();
+  late final AIAssistantController aiLogic;
   Timer? _topicDebounce;
   Timer? _replyDebounce;
 
@@ -160,6 +160,7 @@ class ChatLogic extends SuperController {
     searchMessage = arguments['searchMessage'];
     nickname.value = conversationInfo.showName ?? '';
     faceUrl.value = conversationInfo.faceURL ?? '';
+    aiLogic = Get.find<AIAssistantController>();
     _initChatConfig();
     _setSdkSyncDataListener();
 

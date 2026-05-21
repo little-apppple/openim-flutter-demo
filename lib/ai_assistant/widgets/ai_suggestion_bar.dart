@@ -18,8 +18,9 @@ class AiSuggestionBar extends StatelessWidget {
     return Obx(() {
       final suggestions = aiLogic.suggestions;
       final isLoading = aiLogic.isLoadingSuggestions.value;
+      final hasError = aiLogic.suggestionError.value.isNotEmpty;
 
-      if (!isLoading && suggestions.isEmpty) return const SizedBox.shrink();
+      if (!isLoading && suggestions.isEmpty && !hasError) return const SizedBox.shrink();
 
       return Container(
         constraints: BoxConstraints(minHeight: 44.h),
@@ -27,34 +28,66 @@ class AiSuggestionBar extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 6.h, horizontal: 8.w),
         child: isLoading
             ? _buildShimmer()
-            : Row(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: suggestions.map((s) => _buildSuggestionChip(s)).toList(),
+            : hasError
+                ? _buildErrorRow(aiLogic)
+                : Row(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: suggestions.map((s) => _buildSuggestionChip(s, aiLogic)).toList(),
+                          ),
+                        ),
                       ),
-                    ),
+                      GestureDetector(
+                        onTap: () => aiLogic.clearSuggestions(),
+                        child: Padding(
+                          padding: EdgeInsets.only(left: 8.w),
+                          child: Icon(Icons.close, size: 18.w, color: Styles.c_8E9AB0),
+                        ),
+                      ),
+                    ],
                   ),
-                  GestureDetector(
-                    onTap: () => aiLogic.clearSuggestions(),
-                    child: Padding(
-                      padding: EdgeInsets.only(left: 8.w),
-                      child: Icon(Icons.close, size: 18.w, color: Styles.c_8E9AB0),
-                    ),
-                  ),
-                ],
-              ),
       );
     });
   }
 
-  Widget _buildSuggestionChip(AiSuggestion suggestion) {
+  Widget _buildErrorRow(AIAssistantController aiLogic) {
+    return Row(
+      children: [
+        Icon(Icons.error_outline, size: 16.w, color: Styles.c_8E9AB0),
+        6.horizontalSpace,
+        Expanded(
+          child: Text(
+            '建议生成失败',
+            style: Styles.ts_8E9AB0_12sp,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        GestureDetector(
+          onTap: () => aiLogic.retryLastSuggestion(),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+            child: Text('重试', style: TextStyle(fontSize: 12.sp, color: Styles.c_0089FF)),
+          ),
+        ),
+        GestureDetector(
+          onTap: () => aiLogic.clearSuggestions(),
+          child: Padding(
+            padding: EdgeInsets.only(left: 4.w),
+            child: Icon(Icons.close, size: 18.w, color: Styles.c_8E9AB0),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionChip(AiSuggestion suggestion, AIAssistantController aiLogic) {
     final icon = suggestion.type == AiSuggestionType.topic ? '💡' : '💬';
     return GestureDetector(
       onTap: () {
-        final aiLogic = Get.find<AiAssistantController>();
         if (inputController != null) {
           inputController!.text = suggestion.text;
           inputController!.selection = TextSelection.fromPosition(

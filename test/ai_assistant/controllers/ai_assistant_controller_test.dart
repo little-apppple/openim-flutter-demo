@@ -74,6 +74,10 @@ void main() {
         expect(controller.isLoadingSuggestions.value, isFalse);
       });
 
+      test('suggestionError defaults to empty', () {
+        expect(controller.suggestionError.value, '');
+      });
+
       test('llmConnected defaults to false', () {
         expect(controller.llmConnected.value, isFalse);
       });
@@ -84,24 +88,45 @@ void main() {
     });
 
     group('setAIEnabled', () {
-      test('enables AI', () {
+      test('does not enable AI when LLM is not configured', () {
+        controller.llmConfig.value = const LlmConfig();
+
+        controller.setAIEnabled(true);
+
+        expect(controller.aiEnabled.value, isFalse);
+      });
+
+      test('enables AI when LLM is configured', () {
+        controller.llmConfig.value = const LlmConfig(
+          apiKey: 'sk-test',
+          apiBaseUrl: 'https://api.openai.com/v1',
+          modelName: 'gpt-4o-mini',
+        );
+
         controller.setAIEnabled(true);
 
         expect(controller.aiEnabled.value, isTrue);
       });
 
-      test('disables AI and clears suggestions', () {
+      test('disables AI and clears suggestions and error', () {
+        controller.llmConfig.value = const LlmConfig(
+          apiKey: 'sk-test',
+          apiBaseUrl: 'https://api.openai.com/v1',
+          modelName: 'gpt-4o-mini',
+        );
         controller.setAIEnabled(true);
         controller.suggestions.add(
           const AiSuggestion(type: AiSuggestionType.topic, text: 'test'),
         );
         controller.isLoadingSuggestions.value = true;
+        controller.suggestionError.value = 'some error';
 
         controller.setAIEnabled(false);
 
         expect(controller.aiEnabled.value, isFalse);
         expect(controller.suggestions, isEmpty);
         expect(controller.isLoadingSuggestions.value, isFalse);
+        expect(controller.suggestionError.value, '');
       });
     });
 
@@ -142,17 +167,19 @@ void main() {
     });
 
     group('clearSuggestions', () {
-      test('clears suggestions list and loading state', () {
+      test('clears suggestions list, loading state and error', () {
         controller.suggestions.addAll([
           const AiSuggestion(type: AiSuggestionType.topic, text: 'topic1'),
           const AiSuggestion(type: AiSuggestionType.reply, text: 'reply1'),
         ]);
         controller.isLoadingSuggestions.value = true;
+        controller.suggestionError.value = 'some error';
 
         controller.clearSuggestions();
 
         expect(controller.suggestions, isEmpty);
         expect(controller.isLoadingSuggestions.value, isFalse);
+        expect(controller.suggestionError.value, '');
       });
     });
 
@@ -288,6 +315,44 @@ void main() {
         );
 
         expect(controller.syncQueueLength, 1);
+      });
+
+      test('does not enqueue messages with empty content', () {
+        controller.aiEnabled.value = true;
+        controller.notionSyncEnabled.value = true;
+        controller.notionConfig.value = const NotionConfig(
+          integrationToken: 'token',
+          rootPageId: 'page-123',
+        );
+
+        controller.enqueueMessageForSync(
+          conversationID: 'conv-1',
+          clientMsgID: 'msg-1',
+          senderNickname: 'Alice',
+          content: '',
+          sendTime: 1000,
+        );
+
+        expect(controller.syncQueueLength, 0);
+      });
+
+      test('does not enqueue messages with whitespace-only content', () {
+        controller.aiEnabled.value = true;
+        controller.notionSyncEnabled.value = true;
+        controller.notionConfig.value = const NotionConfig(
+          integrationToken: 'token',
+          rootPageId: 'page-123',
+        );
+
+        controller.enqueueMessageForSync(
+          conversationID: 'conv-1',
+          clientMsgID: 'msg-1',
+          senderNickname: 'Alice',
+          content: '   ',
+          sendTime: 1000,
+        );
+
+        expect(controller.syncQueueLength, 0);
       });
 
       test('enqueues different messages separately', () {

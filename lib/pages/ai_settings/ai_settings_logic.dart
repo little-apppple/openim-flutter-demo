@@ -22,6 +22,8 @@ class AiSettingsLogic extends GetxController {
 
   final isTestingLlm = false.obs;
   final isTestingNotion = false.obs;
+  final obscureApiKey = true.obs;
+  final obscureNotionToken = true.obs;
 
   @override
   void onInit() {

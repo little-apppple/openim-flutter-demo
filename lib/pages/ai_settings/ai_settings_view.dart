@@ -95,7 +95,7 @@ class AiSettingsPage extends StatelessWidget {
                         },
                       )),
                 ),
-                _buildTextField(label: 'API Key', controller: logic.apiKeyCtrl, obscure: true),
+                _buildSecureTextField(label: 'API Key', controller: logic.apiKeyCtrl, obscureState: logic.obscureApiKey),
                 _buildTextField(label: 'API Base URL', controller: logic.apiBaseUrlCtrl),
                 _buildTextField(label: '模型名称', controller: logic.modelNameCtrl),
                 _buildTextField(label: 'Max Tokens', controller: logic.maxTokensCtrl, keyboardType: TextInputType.number),
@@ -124,7 +124,7 @@ class AiSettingsPage extends StatelessWidget {
             ),
             child: Column(
               children: [
-                _buildTextField(label: 'Integration Token', controller: logic.notionTokenCtrl, obscure: true),
+                _buildSecureTextField(label: 'Integration Token', controller: logic.notionTokenCtrl, obscureState: logic.obscureNotionToken),
                 _buildTextField(label: '根页面 ID', controller: logic.notionRootPageIdCtrl),
                 _buildTestButton(
                   isTesting: logic.isTestingNotion,
@@ -216,6 +216,40 @@ class AiSettingsPage extends StatelessWidget {
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(4.r)),
                 ),
               ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _buildSecureTextField({
+    required String label,
+    required TextEditingController controller,
+    required RxBool obscureState,
+  }) =>
+      Padding(
+        padding: EdgeInsets.symmetric(vertical: 8.h),
+        child: Row(
+          children: [
+            SizedBox(width: 100.w, child: label.toText..style = Styles.ts_8E9AB0_14sp),
+            Expanded(
+              child: Obx(() => TextField(
+                    controller: controller,
+                    obscureText: obscureState.value,
+                    style: Styles.ts_0C1C33_14sp,
+                    decoration: InputDecoration(
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(4.r)),
+                      suffixIcon: GestureDetector(
+                        onTap: () => obscureState.value = !obscureState.value,
+                        child: Icon(
+                          obscureState.value ? Icons.visibility_off : Icons.visibility,
+                          size: 18.w,
+                          color: Styles.c_8E9AB0,
+                        ),
+                      ),
+                    ),
+                  )),
             ),
           ],
         ),

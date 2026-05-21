@@ -31,19 +31,39 @@ void main() {
       expect(suggestion.text, '好的，没问题！');
     });
 
-    test('different suggestions with same values are equal when const', () {
+    test('equal suggestions have same hashCode', () {
       const suggestion1 = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
       const suggestion2 = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
 
-      expect(suggestion1.type, suggestion2.type);
-      expect(suggestion1.text, suggestion2.text);
+      expect(suggestion1, equals(suggestion2));
+      expect(suggestion1.hashCode, equals(suggestion2.hashCode));
     });
 
     test('suggestions with different types are not equal', () {
       const topicSuggestion = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
       const replySuggestion = AiSuggestion(type: AiSuggestionType.reply, text: 'hello');
 
-      expect(topicSuggestion.type == replySuggestion.type, isFalse);
+      expect(topicSuggestion, isNot(equals(replySuggestion)));
+    });
+
+    test('suggestions with different text are not equal', () {
+      const suggestion1 = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
+      const suggestion2 = AiSuggestion(type: AiSuggestionType.topic, text: 'world');
+
+      expect(suggestion1, isNot(equals(suggestion2)));
+    });
+
+    test('is not equal to non-AiSuggestion object', () {
+      const suggestion = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
+
+      expect(suggestion == 'hello', isFalse);
+      expect(suggestion == 42, isFalse);
+    });
+
+    test('is equal to itself', () {
+      const suggestion = AiSuggestion(type: AiSuggestionType.topic, text: 'hello');
+
+      expect(suggestion == suggestion, isTrue);
     });
   });
 }

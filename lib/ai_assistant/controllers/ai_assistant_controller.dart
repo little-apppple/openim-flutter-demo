@@ -36,6 +36,7 @@ class AIAssistantController extends GetxController {
 
   final suggestions = <AiSuggestion>[].obs;
   final isLoadingSuggestions = false.obs;
+  final suggestionError = ''.obs;
   final lastSyncTime = ''.obs;
 
   final _notionMemoryCache = <String, String>{};
@@ -45,6 +46,10 @@ class AIAssistantController extends GetxController {
   Timer? _syncTimer;
 
   Worker? _syncEnabledWorker;
+
+  ConversationInfo? _lastSuggestionConversation;
+  Message? _lastSuggestionMessage;
+  bool _lastWasTopicSuggestion = false;
 
   @override
   void onInit() {
@@ -112,11 +117,13 @@ class AIAssistantController extends GetxController {
   }
 
   void setAIEnabled(bool enabled) {
+    if (enabled && !llmConfig.value.isConfigured) return;
     aiEnabled.value = enabled;
     DataSp.putAIEnabled(enabled);
     if (!enabled) {
       suggestions.clear();
       isLoadingSuggestions.value = false;
+      suggestionError.value = '';
     }
   }
 
@@ -163,6 +170,10 @@ class AIAssistantController extends GetxController {
 
     isLoadingSuggestions.value = true;
     suggestions.clear();
+    suggestionError.value = '';
+    _lastSuggestionConversation = conversationInfo;
+    _lastSuggestionMessage = null;
+    _lastWasTopicSuggestion = true;
 
     try {
       final context = await _buildMemoryContext(conversationInfo);
@@ -175,6 +186,7 @@ class AIAssistantController extends GetxController {
       );
     } catch (e) {
       Logger.print('generateTopicSuggestions failed: $e');
+      suggestionError.value = e.toString();
     } finally {
       isLoadingSuggestions.value = false;
       _inFlightConversationIDs.remove(conversationID);
@@ -189,6 +201,10 @@ class AIAssistantController extends GetxController {
 
     isLoadingSuggestions.value = true;
     suggestions.clear();
+    suggestionError.value = '';
+    _lastSuggestionConversation = conversationInfo;
+    _lastSuggestionMessage = newMessage;
+    _lastWasTopicSuggestion = false;
 
     try {
       final context = await _buildMemoryContext(conversationInfo);
@@ -203,15 +219,27 @@ class AIAssistantController extends GetxController {
       );
     } catch (e) {
       Logger.print('generateReplySuggestions failed: $e');
+      suggestionError.value = e.toString();
     } finally {
       isLoadingSuggestions.value = false;
       _inFlightConversationIDs.remove(conversationID);
     }
   }
 
+  void retryLastSuggestion() {
+    if (_lastSuggestionConversation == null) return;
+    suggestionError.value = '';
+    if (_lastWasTopicSuggestion) {
+      generateTopicSuggestions(_lastSuggestionConversation!);
+    } else if (_lastSuggestionMessage != null) {
+      generateReplySuggestions(_lastSuggestionConversation!, _lastSuggestionMessage!);
+    }
+  }
+
   void clearSuggestions() {
     suggestions.clear();
     isLoadingSuggestions.value = false;
+    suggestionError.value = '';
   }
 
   Future<MemoryContext> _buildMemoryContext(ConversationInfo conversationInfo) async {
@@ -300,6 +328,7 @@ class AIAssistantController extends GetxController {
     required int sendTime,
   }) {
     if (!_canSyncNotion) return;
+    if (content.trim().isEmpty) return;
     if (_enqueuedMsgIDs.contains(clientMsgID)) return;
     _enqueuedMsgIDs.add(clientMsgID);
     _syncQueue.add({
@@ -337,6 +366,7 @@ class AIAssistantController extends GetxController {
       grouped.putIfAbsent(convID, () => []).add(item);
     }
 
+    final syncedMsgIDs = <String>{};
     final failedMessages = <Map<String, dynamic>>[];
 
     for (final entry in grouped.entries) {
@@ -365,6 +395,10 @@ class AIAssistantController extends GetxController {
               ));
         }
 
+        for (final msg in entry.value) {
+          syncedMsgIDs.add(msg['clientMsgID'] as String);
+        }
+
         lastSyncTime.value = DateTime.now().toIso8601String();
         DataSp.putAILastSyncTime(lastSyncTime.value);
       } catch (e) {
@@ -373,10 +407,10 @@ class AIAssistantController extends GetxController {
       }
     }
 
+    _enqueuedMsgIDs.removeAll(syncedMsgIDs);
+
     if (failedMessages.isNotEmpty) {
       _syncQueue.insertAll(0, failedMessages);
-    } else {
-      _enqueuedMsgIDs.removeAll(batchedMsgIDs);
     }
   }
 
