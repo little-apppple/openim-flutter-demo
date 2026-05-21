@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
+import 'package:openim/ai_assistant/widgets/ai_suggestion_bar.dart';
 import 'package:openim_common/openim_common.dart';
 
 import 'chat_logic.dart';
@@ -166,19 +167,25 @@ class ChatPage extends StatelessWidget {
                 path: logic.background.value,
                 backgroundColor: Styles.c_FFFFFF,
                 floatView: _groupCallHintView,
-                bottomView: ChatInputBox(
-                  forceCloseToolboxSub: logic.forceCloseToolbox,
-                  controller: logic.inputCtrl,
-                  focusNode: logic.focusNode,
-                  isNotInGroup: logic.isInvalidGroup,
-                  directionalText: logic.directionalText(),
-                  onCloseDirectional: logic.onClearDirectional,
-                  onSend: (v) => logic.sendTextMsg(),
-                  toolbox: ChatToolBox(
-                    onTapAlbum: logic.onTapAlbum,
-                    onTapCall: logic.isGroupChat ? null : logic.call,
-                  ),
-                  voiceRecordBar: const SizedBox(),
+                bottomView: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AiSuggestionBar(inputController: logic.inputCtrl),
+                    ChatInputBox(
+                      forceCloseToolboxSub: logic.forceCloseToolbox,
+                      controller: logic.inputCtrl,
+                      focusNode: logic.focusNode,
+                      isNotInGroup: logic.isInvalidGroup,
+                      directionalText: logic.directionalText(),
+                      onCloseDirectional: logic.onClearDirectional,
+                      onSend: (v) => logic.sendTextMsg(),
+                      toolbox: ChatToolBox(
+                        onTapAlbum: logic.onTapAlbum,
+                        onTapCall: logic.isGroupChat ? null : logic.call,
+                      ),
+                      voiceRecordBar: const SizedBox(),
+                    ),
+                  ],
                 ),
                 child: ChatListView(
                   onTouch: () => logic.closeToolbox(),

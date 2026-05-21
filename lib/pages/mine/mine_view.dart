@@ -35,6 +35,9 @@ class MinePage extends StatelessWidget {
               onTap: logic.viewMyInfo,
               isTopRadius: true,
             ),
+            _buildAiItemView(
+              onTap: logic.openAiSettings,
+            ),
             _buildItemView(
               icon: ImageRes.accountSetup,
               label: StrRes.accountSetup,
@@ -99,6 +102,44 @@ class MinePage extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      );
+
+  Widget _buildAiItemView({
+    bool isTopRadius = false,
+    bool isBottomRadius = false,
+    Function()? onTap,
+  }) =>
+      Container(
+        margin: EdgeInsets.symmetric(horizontal: 16.w),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: Styles.c_FFFFFF,
+            borderRadius: BorderRadius.only(
+              topRight: Radius.circular(isTopRadius ? 6.r : 0),
+              topLeft: Radius.circular(isTopRadius ? 6.r : 0),
+              bottomRight: Radius.circular(isBottomRadius ? 6.r : 0),
+              bottomLeft: Radius.circular(isBottomRadius ? 6.r : 0),
+            ),
+          ),
+          child: InkWell(
+            onTap: onTap,
+            child: Container(
+              height: 56.h,
+              padding: EdgeInsets.only(left: 12.w, right: 16.w),
+              child: Row(
+                children: [
+                  Icon(Icons.smart_toy_outlined, size: 24.w, color: Styles.c_0C1C33),
+                  11.horizontalSpace,
+                  'AI 助手'.toText..style = Styles.ts_0C1C33_17sp,
+                  const Spacer(),
+                  ImageRes.rightArrow.toImage
+                    ..width = 24.w
+                    ..height = 24.h,
+                ],
+              ),
+            ),
+          ),
         ),
       );
 

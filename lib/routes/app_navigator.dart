@@ -353,4 +353,6 @@ class AppNavigator {
       });
 
   static startSelectContactsFromTag() => Get.toNamed(AppRoutes.selectContactsFromTag);
+
+  static startAiSettings() => Get.toNamed(AppRoutes.aiSettings);
 }

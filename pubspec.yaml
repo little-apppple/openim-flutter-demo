@@ -100,6 +100,8 @@ dependencies:
       ref: 56db1b3
   focus_detector_v2: ^3.1.0+1
   persistent_bottom_nav_bar_v2: ^5.3.1
+  flutter_secure_storage: ^9.2.4
+  shimmer: ^3.0.0
   flutter_openim_sdk: ^3.8.3+hotfix.12
 
   openim_common:
@@ -115,6 +117,7 @@ dev_dependencies:
   hive_generator: ^2.0.1
   build_runner: ^2.4.15
   flutter_lints: ^6.0.0
+  mocktail: ^1.0.4
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 

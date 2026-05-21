@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_openim_sdk/flutter_openim_sdk.dart';
 import 'package:get/get.dart';
+import 'package:openim/ai_assistant/controllers/ai_assistant_controller.dart';
 import 'package:openim_common/openim_common.dart';
 import 'package:pull_to_refresh_new/pull_to_refresh.dart';
 import 'package:rxdart/rxdart.dart';
@@ -90,6 +91,9 @@ class ChatLogic extends SuperController {
   String? groupOwnerID;
 
   final _pageSize = 40;
+  late final AIAssistantController aiLogic;
+  Timer? _topicDebounce;
+  Timer? _replyDebounce;
 
   RTCBridge? get rtcBridge => PackageBridge.rtcBridge;
 
@@ -156,6 +160,7 @@ class ChatLogic extends SuperController {
     searchMessage = arguments['searchMessage'];
     nickname.value = conversationInfo.showName ?? '';
     faceUrl.value = conversationInfo.faceURL ?? '';
+    aiLogic = Get.find<AIAssistantController>();
     _initChatConfig();
     _setSdkSyncDataListener();
 
@@ -173,12 +178,23 @@ class ChatLogic extends SuperController {
         } else {
           if (!messageList.contains(message) && !scrollingCacheMessageList.contains(message)) {
             _isReceivedMessageWhenSyncing = true;
+            _replyDebounce?.cancel();
+            _replyDebounce = Timer(const Duration(seconds: 2), () {
+              aiLogic.generateReplySuggestions(conversationInfo, message);
+            });
             if (scrollController.offset != 0) {
               scrollingCacheMessageList.add(message);
             } else {
               messageList.add(message);
               scrollBottom();
             }
+            aiLogic.enqueueMessageForSync(
+              conversationID: conversationInfo.conversationID,
+              clientMsgID: message.clientMsgID ?? '',
+              senderNickname: message.senderNickname ?? '',
+              content: message.textElem?.content ?? '',
+              sendTime: message.sendTime ?? DateTime.now().millisecondsSinceEpoch,
+            );
           }
         }
       }
@@ -325,6 +341,9 @@ class ChatLogic extends SuperController {
       }
     };
 
+    _topicDebounce = Timer(const Duration(milliseconds: 1500), () {
+      aiLogic.generateTopicSuggestions(conversationInfo);
+    });
     super.onInit();
   }
 
@@ -463,6 +482,13 @@ class ChatLogic extends SuperController {
       id: oldMsg.clientMsgID!,
       value: true,
     ));
+    aiLogic.enqueueMessageForSync(
+      conversationID: conversationInfo.conversationID,
+      clientMsgID: newMsg.clientMsgID ?? '',
+      senderNickname: OpenIM.iMManager.userInfo.nickname ?? '',
+      content: newMsg.textElem?.content ?? '',
+      sendTime: newMsg.sendTime ?? DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   void _senFailed(Message message, String? groupId, String? userId, error, stack) async {
@@ -765,6 +791,9 @@ class ChatLogic extends SuperController {
     connectionSub.cancel();
 
     _debounce?.cancel();
+    _topicDebounce?.cancel();
+    _replyDebounce?.cancel();
+    aiLogic.clearSuggestions();
     super.onClose();
   }
 
